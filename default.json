@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>jdx/renovate-config"],
+  "timezone": "Australia/Melbourne",
+  "schedule": ["* 17 * * 5"],
+  "dependencyDashboard": true,
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "packageRules": [
+    {
+      "description": "Automerge majors after green CI (Deliver!)",
+      "matchUpdateTypes": ["major"],
+      "automerge": true
+    }
+  ]
+}
