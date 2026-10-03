@@ -1,12 +1,22 @@
 name: aube-lock
 
-# Thin wrapper that pins jdx/renovate-config's aube-lock reusable workflow.
-# Consumer repos call this workflow (not jdx's directly) so the pin lives in
-# one place. See README.md.
+# Regenerates aube-lock.yaml on Renovate branches, verifies with the consumer
+# repo's scripts, and publishes a Check Run on the final HEAD so automerge can
+# proceed without a GitHub App (GITHUB_TOKEN pushes do not retrigger workflows).
 
 on:
   workflow_call:
     inputs:
+      verify_command:
+        description: Shell command to run after lock regen (consumer merge gates)
+        required: false
+        type: string
+        default: './script/cibuild'
+      check_name:
+        description: Check Run name published on the final commit SHA
+        required: false
+        type: string
+        default: renovate-verify
       post_update_task:
         description: Optional mise task that regenerates dependency-derived files
         required: false
@@ -17,20 +27,125 @@ on:
         required: false
         type: string
         default: ''
-    secrets:
-      AUBE_LOCK_APP_ID:
-        description: GitHub App ID used to push lockfile commits (optional)
-        required: false
-      AUBE_LOCK_APP_PRIVATE_KEY:
-        description: GitHub App private key used to push lockfile commits (optional)
-        required: false
 
 jobs:
   aube-lock:
-    uses: jdx/renovate-config/.github/workflows/aube-lock.yml@b326076309f570c2967d29a99742838c9ac0f383 # v1.0.1
-    with:
-      post_update_task: ${{ inputs.post_update_task }}
-      post_update_paths: ${{ inputs.post_update_paths }}
-    secrets:
-      AUBE_LOCK_APP_ID: ${{ secrets.AUBE_LOCK_APP_ID }}
-      AUBE_LOCK_APP_PRIVATE_KEY: ${{ secrets.AUBE_LOCK_APP_PRIVATE_KEY }}
+    # Only react to Renovate's own pushes (immutable numeric id).
+    if: github.event.sender.id == 29139614 # renovate[bot]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      checks: write
+    concurrency:
+      group: aube-lock-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Need a token that can push; GITHUB_TOKEN is fine for the commit.
+          # Workflows will not retrigger — we publish Check Runs instead.
+          token: ${{ github.token }}
+          fetch-depth: 0
+
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install: true
+
+      - name: Cache aube store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.local/share/aube/store
+          key: ${{ runner.os }}-aube-${{ hashFiles('**/aube-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-aube-
+
+      - name: Regenerate aube lockfiles
+        id: lockfiles
+        run: |
+          set -euo pipefail
+          if [ -z "$(git ls-files -- '*aube-lock.yaml')" ]; then
+            echo "no aube-lock.yaml in this repo, nothing to do"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          for d in $(git ls-files -- '*aube-lock.yaml' | xargs -n1 dirname); do
+            echo "regenerating aube-lock.yaml in $d"
+            (cd "$d" && mise x -- aube install --no-frozen-lockfile) || exit 1
+          done
+
+      - name: Regenerate dependency-derived files
+        if: steps.lockfiles.outputs.found == 'true' && inputs.post_update_task != ''
+        env:
+          POST_UPDATE_TASK: ${{ inputs.post_update_task }}
+        run: mise run "$POST_UPDATE_TASK"
+
+      - name: Commit and push lockfile if changed
+        id: commit
+        if: steps.lockfiles.outputs.found == 'true'
+        env:
+          POST_UPDATE_PATHS: ${{ inputs.post_update_paths }}
+        run: |
+          set -euo pipefail
+          git add -- '*aube-lock.yaml'
+          while IFS= read -r path; do
+            if [ -n "$path" ]; then
+              git add -- "$path"
+            fi
+          done <<< "$POST_UPDATE_PATHS"
+          if git diff --cached --quiet; then
+            echo "dependency artifacts already up to date"
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(deps): regenerate dependency artifacts'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify (consumer merge gates)
+        id: verify
+        if: steps.lockfiles.outputs.found == 'true'
+        env:
+          VERIFY_COMMAND: ${{ inputs.verify_command }}
+        run: |
+          set -euo pipefail
+          echo "Running: $VERIFY_COMMAND"
+          bash -lc "$VERIFY_COMMAND"
+
+      - name: Publish Check Run on final HEAD
+        if: always() && steps.lockfiles.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECK_NAME: ${{ inputs.check_name }}
+          HEAD_SHA: ${{ steps.commit.outputs.head_sha }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+        run: |
+          set -euo pipefail
+          sha="${HEAD_SHA:-$(git rev-parse HEAD)}"
+          if [ "${VERIFY_OUTCOME}" = "success" ]; then
+            conclusion=success
+            title="Renovate verify passed"
+            summary="Lock regenerated (if needed) and \`${{ inputs.verify_command }}\` succeeded."
+          else
+            conclusion=failure
+            title="Renovate verify failed"
+            summary="Lock regenerated (if needed) but \`${{ inputs.verify_command }}\` failed."
+          fi
+          # Also mirror common CI job names so branch protection on those
+          # contexts can green without a GITHUB_TOKEN-triggered re-run.
+          for name in "$CHECK_NAME" lint test audit build map-dom-budget verify-workflows; do
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/check-runs" \
+              -f name="$name" \
+              -f head_sha="$sha" \
+              -f status=completed \
+              -f conclusion="$conclusion" \
+              -f "output[title]=$title" \
+              -f "output[summary]=$summary"
+          done

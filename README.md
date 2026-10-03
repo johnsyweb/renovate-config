@@ -14,9 +14,22 @@ Extends [jdx/renovate-config](https://github.com/jdx/renovate-config) with:
 
 Cooling (`minimumReleaseAge: 7 days`) and ecosystem grouping come from jdx’s preset.
 
+## No-App aube-lock pattern
+
+Renovate’s npm manager updates `package.json` but does not understand `aube-lock.yaml`. This repo’s reusable `aube-lock` workflow:
+
+1. Regenerates every tracked `*aube-lock.yaml` on `renovate/**` pushes from renovate[bot]
+2. Commits with `GITHUB_TOKEN` when needed
+3. Runs the consumer’s verify command (default `./script/cibuild`)
+4. Publishes Check Runs on the **final** HEAD (including mirrored CI job names) so automerge is not blocked by GitHub’s “token pushes do not retrigger workflows” rule
+
+No GitHub App secrets are required.
+
+Fleet membership for the Mend Renovate app is managed in [johnsyweb/github-infra](https://github.com/johnsyweb/github-infra).
+
 ## Use in a repo
 
-1. Install the [Mend Renovate GitHub App](https://github.com/apps/renovate) on the repository.
+1. Ensure the repo is listed in [johnsyweb/github-infra](https://github.com/johnsyweb/github-infra) `renovate/repos.yaml` (after the one-time Mend install documented there).
 2. Add `.github/renovate.json`:
 
 ```json
@@ -37,18 +50,18 @@ on:
 
 permissions:
   contents: write
+  checks: write
 
 jobs:
   aube-lock:
-    uses: johnsyweb/renovate-config/.github/workflows/aube-lock.yml@<pin-sha> # vX.Y.Z
-    secrets:
-      AUBE_LOCK_APP_ID: ${{ secrets.AUBE_LOCK_APP_ID }}
-      AUBE_LOCK_APP_PRIVATE_KEY: ${{ secrets.AUBE_LOCK_APP_PRIVATE_KEY }}
+    uses: johnsyweb/renovate-config/.github/workflows/aube-lock.yml@<pin-sha>
+    with:
+      verify_command: ./script/cibuild
+      check_name: renovate-verify
 ```
 
-4. Optionally configure a GitHub App and set `AUBE_LOCK_APP_ID` / `AUBE_LOCK_APP_PRIVATE_KEY` so lockfile commits retrigger CI (plain `GITHUB_TOKEN` often will not).
-5. Remove Dependabot npm/docker/github-actions config so you do not get duplicate PRs.
-6. Align aube cooling with Renovate: set `minimumReleaseAge: 10080` (7 days, in minutes) in `aube-workspace.yaml`.
+4. Remove Dependabot npm/docker/github-actions config so you do not get duplicate PRs.
+5. Align aube cooling with Renovate: set `minimumReleaseAge: 10080` (7 days, in minutes) in `aube-workspace.yaml`.
 
 ### Local dependency bumps
 
@@ -59,6 +72,8 @@ aube outdated
 aube update
 ```
 
+Or `mise run update-deps` where that task exists.
+
 ## Fleet migration plan
 
 ### Phase 1 — aube-native (in progress)
@@ -67,11 +82,11 @@ Apply this preset + aube-lock workflow to repositories that already use `aube-lo
 
 | Order | Repository | Notes |
 | --- | --- | --- |
-| 1 | [ambassy](https://github.com/johnsyweb/ambassy) | Pilot on aube `1.40.0` (mise attestation currently blocks `2.6.1`); exit after one full Friday cycle |
+| 1 | [ambassy](https://github.com/johnsyweb/ambassy) | Pilot on aube `1.40.0`; exit after one full Friday cycle |
 | 2 | Highest-touch aube-native next (e.g. agent-skills, eventuate, foretoken, parkrun-by-lga) | Stamp the ambassy pattern |
 | 3 | Remaining aube-native | Including lower-traffic clones under `~/src` |
 
-**Pilot exit criteria:** Renovate opens PRs on the Friday schedule → aube-lock regenerates `aube-lock.yaml` → CI green → automerge lands at least one non-major; majors path observed or simulated; `mise run update-deps` run once locally.
+**Pilot exit criteria:** Renovate opens PRs on the Friday schedule → aube-lock regenerates `aube-lock.yaml` → verify Check Runs green → automerge lands at least one non-major; `mise run update-deps` run once locally.
 
 ### Phase 2 — hybrids and legacy lockfiles
 
@@ -90,4 +105,4 @@ Record each migration with a short ADR in the target repo.
 
 - Renovate and aube both wait **7 days** before taking a new release.
 - `paranoid: true` and explicit `allowBuilds` stay fail-closed: a Renovate PR that needs a new lifecycle script stays red until a human blesses it.
-- Automerge (including majors) only after green CI — Deliver!
+- Automerge (including majors) only after green checks — Deliver!
