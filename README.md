@@ -67,7 +67,7 @@ Apply this preset + aube-lock workflow to repositories that already use `aube-lo
 
 | Order | Repository | Notes |
 | --- | --- | --- |
-| 1 | [ambassy](https://github.com/johnsyweb/ambassy) | Pilot; exit after one full Friday cycle |
+| 1 | [ambassy](https://github.com/johnsyweb/ambassy) | Pilot on aube `1.40.0` (mise attestation currently blocks `2.6.1`); exit after one full Friday cycle |
 | 2 | Highest-touch aube-native next (e.g. agent-skills, eventuate, foretoken, parkrun-by-lga) | Stamp the ambassy pattern |
 | 3 | Remaining aube-native | Including lower-traffic clones under `~/src` |
 
