@@ -7,7 +7,7 @@ Extends [jdx/renovate-config](https://github.com/jdx/renovate-config) with:
 | Override | Value |
 | --- | --- |
 | Timezone | `Australia/Melbourne` |
-| Schedule | Fridays during the 17:00 hour |
+| Schedule | at any time (no branch-creation window) |
 | Dependency dashboard | enabled |
 | Commit messages | Conventional Commits `chore(deps): …` |
 | Majors | automerged when CI is green (non-majors stay grouped per jdx) |

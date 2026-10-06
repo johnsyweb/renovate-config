@@ -4,9 +4,7 @@
     "github>jdx/renovate-config"
   ],
   "timezone": "Australia/Melbourne",
-  "schedule": [
-    "* 17 * * 5"
-  ],
+  "schedule": ["at any time"],
   "dependencyDashboard": true,
   "semanticCommits": "enabled",
   "semanticCommitType": "chore",
