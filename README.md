@@ -82,11 +82,11 @@ Apply this preset + aube-lock workflow to repositories that already use `aube-lo
 
 | Order | Repository | Notes |
 | --- | --- | --- |
-| 1 | [ambassy](https://github.com/johnsyweb/ambassy) | Pilot on aube `1.40.0`; exit after one full Friday cycle |
+| 1 | [ambassy](https://github.com/johnsyweb/ambassy) | Pilot on aube `1.40.0`; exit after a successful open → lock → automerge cycle |
 | 2 | Highest-touch aube-native next (e.g. agent-skills, eventuate, foretoken, parkrun-by-lga) | Stamp the ambassy pattern |
 | 3 | Remaining aube-native | Including lower-traffic clones under `~/src` |
 
-**Pilot exit criteria:** Renovate opens PRs on the Friday schedule → aube-lock regenerates `aube-lock.yaml` → verify Check Runs green → automerge lands at least one non-major; `mise run update-deps` run once locally.
+**Pilot exit criteria:** Renovate opens PRs → aube-lock regenerates `aube-lock.yaml` → verify Check Runs green → automerge lands at least one non-major; `mise run update-deps` run once locally.
 
 ### Phase 2 — hybrids and legacy lockfiles
 
