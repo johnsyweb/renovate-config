@@ -51,14 +51,14 @@ Renovate’s npm manager updates `package.json` but does not understand `aube-lo
 
 1. Regenerates every tracked `*aube-lock.yaml` on `renovate/**` pushes from renovate[bot]
 2. Commits with `GITHUB_TOKEN` when needed
-3. Runs the consumer’s verify command (default `./script/cibuild`)
+3. Runs the consumer’s verify command (default `aube ci`)
 4. Publishes Check Runs on the **final** HEAD so automerge is not blocked by GitHub’s “token pushes do not retrigger workflows” rule
 
 No GitHub App secrets are required.
 
 ### Use in a repo
 
-1. Ensure the repo is listed in [johnsyweb/github-infra](https://github.com/johnsyweb/github-infra) `renovate/repos.yaml` (after the one-time Mend install documented there).
+1. Ensure the repo is listed in [johnsyweb/github-infra](https://github.com/johnsyweb/github-infra) `renovate/repos.yaml` (keep `repos:` sorted alphabetically; after the one-time Mend install documented there).
 2. Add `.github/renovate.json` as in [Getting started](#getting-started).
 3. Add `.github/workflows/aube-lock.yml` (pin this repo’s commit SHA):
 
@@ -77,13 +77,19 @@ jobs:
   aube-lock:
     uses: johnsyweb/renovate-config/.github/workflows/aube-lock.yml@<pin-sha>
     with:
-      verify_command: ./script/cibuild
       check_name: renovate-verify
+      # verify_command defaults to `aube ci`. Pass a richer gate only when the
+      # repo already has one (e.g. verify_command: ./scripts/cibuild).
 ```
 
 4. Remove Dependabot npm/docker/github-actions config so you do not get duplicate PRs. Close open Dependabot PRs with a pointer to Renovate.
-5. Align aube cooling with Renovate: set `minimumReleaseAge: 10080` (7 days, in minutes) in `aube-workspace.yaml`.
+5. Align aube cooling with Renovate: set `minimumReleaseAge: 10080` (7 days, in minutes) in `aube-workspace.yaml`. Do not add an empty `allowBuilds: {}` — fail-closed is the default under `strictDepBuilds` / paranoid.
 6. **Refresh the root README in the same change** — done when (a) no Dependabot claims remain, (b) install / update / CI commands match mise + aube, and (c) dependency ownership names Renovate (and the ADR) rather than Dependabot. If the README is substantially stale beyond those lines, run the `/readme` skill so the cutover does not leave a `#dependabot` anchor pointing at fiction.
+7. **Lean consumer defaults** (skip unless the repo already has a richer pattern):
+   - Verify with `aube ci` — no `script/ci-install` / `script/cibuild` wrappers that only call it.
+   - One scripts directory (`scripts/`), not both `script/` and `scripts/`.
+   - PR CI job named `build` that runs `aube ci` on `pull_request` only (not also on `push` to `main` when Release already installs).
+   - Ruleset requiring `build` with strict up-to-date off, so Renovate platform automerge can arm (aube-lock mirrors that check name).
 
 Local within-range bumps in consumers: `aube outdated` then `aube update`, or `mise run update-deps` where that task exists. Keep `mise run update` for “after git pull”.
 
