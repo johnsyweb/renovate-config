@@ -60,8 +60,9 @@ jobs:
       check_name: renovate-verify
 ```
 
-4. Remove Dependabot npm/docker/github-actions config so you do not get duplicate PRs.
+4. Remove Dependabot npm/docker/github-actions config so you do not get duplicate PRs. Close open Dependabot PRs with a pointer to Renovate.
 5. Align aube cooling with Renovate: set `minimumReleaseAge: 10080` (7 days, in minutes) in `aube-workspace.yaml`.
+6. **Refresh the root README in the same change** — done when (a) no Dependabot claims remain, (b) install / update / CI commands match mise + aube, and (c) dependency ownership names Renovate (and the ADR) rather than Dependabot. If the README is substantially stale beyond those lines, run the `/readme` skill so the cutover does not leave a `#dependabot` anchor pointing at fiction.
 
 ### Local dependency bumps
 
@@ -99,8 +100,9 @@ Repositories that still use `pnpm-lock.yaml` / `package-lock.json` (even if mise
 | Opportunistic | Dormant repos wait until next real touch |
 | Gate | If the touch changes dependencies or CI, migrate to aube + this Renovate pattern in the same effort |
 | Content-only | One-line content fixes need not force migration |
+| Docs | Same PR: ADR(s) + root README refreshed per step 6 above |
 
-Record each migration with a short ADR in the target repo.
+Record each migration with a short ADR in the target repo. Migration is incomplete while the README still documents Dependabot or the old package manager.
 
 ### Supply-chain posture (shared)
 
