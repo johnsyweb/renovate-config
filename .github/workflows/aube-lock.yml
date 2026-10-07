@@ -11,7 +11,7 @@ on:
         description: Shell command to run after lock regen (consumer merge gates)
         required: false
         type: string
-        default: './script/cibuild'
+        default: 'aube ci'
       check_name:
         description: Check Run name published on the final commit SHA
         required: false
