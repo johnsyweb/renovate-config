@@ -27,7 +27,7 @@ Save as `.github/renovate.json`, then finish the [Use in a repo](#use-in-a-repo)
 
 ## Development status
 
-Maintained. Active preset for ambassy, progression, and further fleet migrations.
+Maintained. Active preset for ambassy, progression, agent-skills, and further fleet migrations.
 
 ## Local development
 
@@ -95,8 +95,9 @@ Local within-range bumps in consumers: `aube outdated` then `aube update`, or `m
 | --- | --- | --- |
 | 1 | [ambassy](https://github.com/johnsyweb/ambassy) | Pilot on aube `1.40.0`; exit after a successful open → lock → automerge cycle |
 | 2 | [progression](https://github.com/johnsyweb/progression) | Phase 2 hybrid → aube + Renovate (pnpm retired) |
-| 3 | Highest-touch aube-native next (e.g. agent-skills, eventuate, foretoken, parkrun-by-lga) | Stamp the ambassy pattern |
-| 4 | Remaining aube-native | Including lower-traffic clones under `~/src` |
+| 3 | [agent-skills](https://github.com/johnsyweb/agent-skills) | aube-native; Renovate replaces Dependabot + Monday `aube-update` |
+| 4 | Highest-touch aube-native next (e.g. eventuate, foretoken, parkrun-by-lga) | Stamp the ambassy pattern |
+| 5 | Remaining aube-native | Including lower-traffic clones under `~/src` |
 
 **Pilot exit criteria:** Renovate opens PRs → aube-lock regenerates `aube-lock.yaml` → verify Check Runs green → automerge lands at least one non-major; `mise run update-deps` run once locally.
 
