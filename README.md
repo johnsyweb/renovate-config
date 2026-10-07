@@ -1,36 +1,12 @@
-# johnsyweb/renovate-config
+# renovate-config
 
-Shared [Renovate](https://docs.renovatebot.com/) preset and aube lockfile workflow for johnsyweb repositories that use [aube](https://aube.sh/) + [mise](https://mise.jdx.dev/).
+Shared [Renovate](https://docs.renovatebot.com/) preset and reusable aube-lock workflow for johnsyweb repositories that use [aube](https://aube.jdx.dev/) + [mise](https://mise.jdx.dev/).
 
-Extends [jdx/renovate-config](https://github.com/jdx/renovate-config) with:
+One place to pin Melbourne timezone, open schedules, dependency dashboards, Conventional Commits, and major automerge — plus lockfile regeneration that Mend Renovate cannot do alone — so every fleet repo inherits the same supply-chain posture.
 
-| Override | Value |
-| --- | --- |
-| Timezone | `Australia/Melbourne` |
-| Schedule | at any time (no branch-creation window) |
-| Dependency dashboard | enabled |
-| Commit messages | Conventional Commits `chore(deps): …` |
-| Majors | automerged when CI is green (non-majors stay grouped per jdx) |
+## Getting started
 
-Cooling (`minimumReleaseAge: 7 days`) and ecosystem grouping come from jdx’s preset.
-
-## No-App aube-lock pattern
-
-Renovate’s npm manager updates `package.json` but does not understand `aube-lock.yaml`. This repo’s reusable `aube-lock` workflow:
-
-1. Regenerates every tracked `*aube-lock.yaml` on `renovate/**` pushes from renovate[bot]
-2. Commits with `GITHUB_TOKEN` when needed
-3. Runs the consumer’s verify command (default `./script/cibuild`)
-4. Publishes Check Runs on the **final** HEAD (including mirrored CI job names) so automerge is not blocked by GitHub’s “token pushes do not retrigger workflows” rule
-
-No GitHub App secrets are required.
-
-Fleet membership for the Mend Renovate app is managed in [johnsyweb/github-infra](https://github.com/johnsyweb/github-infra).
-
-## Use in a repo
-
-1. Ensure the repo is listed in [johnsyweb/github-infra](https://github.com/johnsyweb/github-infra) `renovate/repos.yaml` (after the one-time Mend install documented there).
-2. Add `.github/renovate.json`:
+In a consumer repo, extend this preset:
 
 ```json
 {
@@ -39,7 +15,52 @@ Fleet membership for the Mend Renovate app is managed in [johnsyweb/github-infra
 }
 ```
 
-3. Add `.github/workflows/aube-lock.yml` (pin the commit SHA of this repo — ambassy’s `verify-github-action-pins` requires full SHAs):
+Save as `.github/renovate.json`, then finish the [Use in a repo](#use-in-a-repo) checklist (aube-lock workflow, Dependabot removal, cooling, README refresh) and list the repo in [johnsyweb/github-infra](https://github.com/johnsyweb/github-infra).
+
+## Help
+
+[GitHub Issues](https://github.com/johnsyweb/renovate-config/issues). Fleet membership questions belong in [johnsyweb/github-infra](https://github.com/johnsyweb/github-infra).
+
+## Maintainers
+
+[johnsyweb](https://github.com/johnsyweb) (Pete Johns).
+
+## Development status
+
+Maintained. Active preset for ambassy, progression, and further fleet migrations.
+
+## Local development
+
+This repository has no package install. Edit `default.json` for preset overrides and `.github/workflows/aube-lock.yml` for the reusable lock workflow. Consumer repos pin the workflow by full commit SHA.
+
+Preset highlights (extends [jdx/renovate-config](https://github.com/jdx/renovate-config)):
+
+| Override | Value |
+| --- | --- |
+| Timezone | `Australia/Melbourne` |
+| Schedule | at any time (no branch-creation window) |
+| Dependency dashboard | enabled |
+| Commit messages | Conventional Commits `chore(deps): …` |
+| Majors | automerged when CI is green |
+
+Cooling (`minimumReleaseAge: 7 days`) and ecosystem grouping come from jdx’s preset.
+
+### No-App aube-lock pattern
+
+Renovate’s npm manager updates `package.json` but does not understand `aube-lock.yaml`. The reusable `aube-lock` workflow:
+
+1. Regenerates every tracked `*aube-lock.yaml` on `renovate/**` pushes from renovate[bot]
+2. Commits with `GITHUB_TOKEN` when needed
+3. Runs the consumer’s verify command (default `./script/cibuild`)
+4. Publishes Check Runs on the **final** HEAD so automerge is not blocked by GitHub’s “token pushes do not retrigger workflows” rule
+
+No GitHub App secrets are required.
+
+### Use in a repo
+
+1. Ensure the repo is listed in [johnsyweb/github-infra](https://github.com/johnsyweb/github-infra) `renovate/repos.yaml` (after the one-time Mend install documented there).
+2. Add `.github/renovate.json` as in [Getting started](#getting-started).
+3. Add `.github/workflows/aube-lock.yml` (pin this repo’s commit SHA):
 
 ```yaml
 name: aube-lock
@@ -64,22 +85,11 @@ jobs:
 5. Align aube cooling with Renovate: set `minimumReleaseAge: 10080` (7 days, in minutes) in `aube-workspace.yaml`.
 6. **Refresh the root README in the same change** — done when (a) no Dependabot claims remain, (b) install / update / CI commands match mise + aube, and (c) dependency ownership names Renovate (and the ADR) rather than Dependabot. If the README is substantially stale beyond those lines, run the `/readme` skill so the cutover does not leave a `#dependabot` anchor pointing at fiction.
 
-### Local dependency bumps
+Local within-range bumps in consumers: `aube outdated` then `aube update`, or `mise run update-deps` where that task exists. Keep `mise run update` for “after git pull”.
 
-Keep `mise run update` for “after git pull”. Add a separate task that runs within-range bumps:
+### Fleet migration plan
 
-```bash
-aube outdated
-aube update
-```
-
-Or `mise run update-deps` where that task exists.
-
-## Fleet migration plan
-
-### Phase 1 — aube-native (in progress)
-
-Apply this preset + aube-lock workflow to repositories that already use `aube-lock.yaml` as the source of truth.
+**Phase 1 — aube-native (in progress).** Apply this preset + aube-lock to repositories that already use `aube-lock.yaml`.
 
 | Order | Repository | Notes |
 | --- | --- | --- |
@@ -90,9 +100,7 @@ Apply this preset + aube-lock workflow to repositories that already use `aube-lo
 
 **Pilot exit criteria:** Renovate opens PRs → aube-lock regenerates `aube-lock.yaml` → verify Check Runs green → automerge lands at least one non-major; `mise run update-deps` run once locally.
 
-### Phase 2 — hybrids and legacy lockfiles
-
-Repositories that still use `pnpm-lock.yaml` / `package-lock.json` (even if mise lists aube) are **not** on this pattern yet.
+**Phase 2 — hybrids and legacy lockfiles.** Repositories that still use `pnpm-lock.yaml` / `package-lock.json` are not on this pattern yet.
 
 | Rule | Behaviour |
 | --- | --- |
@@ -104,8 +112,16 @@ Repositories that still use `pnpm-lock.yaml` / `package-lock.json` (even if mise
 
 Record each migration with a short ADR in the target repo. Migration is incomplete while the README still documents Dependabot or the old package manager.
 
-### Supply-chain posture (shared)
+### Supply-chain posture
 
 - Renovate and aube both wait **7 days** before taking a new release.
 - `paranoid: true` and explicit `allowBuilds` stay fail-closed: a Renovate PR that needs a new lifecycle script stays red until a human blesses it.
 - Automerge (including majors) only after green checks — Deliver!
+
+## Contributing
+
+Open a PR against this repository. Prefer Conventional Commits. Changes to `default.json` or `aube-lock.yml` affect every fleet consumer on the next Renovate run or the next SHA pin bump.
+
+## Releasing
+
+Merging to `main` publishes the preset (`github>johnsyweb/renovate-config`) and the reusable workflow at the new commit SHA. Consumers that pin aube-lock by SHA must bump the pin deliberately; the preset `extends` string tracks `main`.
