@@ -27,6 +27,20 @@ on:
         required: false
         type: string
         default: ''
+      status_check_names:
+        description: >
+          Newline-separated Check Run names to publish on the final HEAD in
+          addition to check_name. Mirror the consumer's required CI job names
+          so GITHUB_TOKEN lock commits can satisfy branch protection.
+        required: false
+        type: string
+        default: |
+          lint
+          test
+          audit
+          build
+          map-dom-budget
+          verify-workflows
 
 jobs:
   aube-lock:
@@ -124,23 +138,28 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CHECK_NAME: ${{ inputs.check_name }}
+          STATUS_CHECK_NAMES: ${{ inputs.status_check_names }}
           HEAD_SHA: ${{ steps.commit.outputs.head_sha }}
           VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          VERIFY_COMMAND: ${{ inputs.verify_command }}
         run: |
           set -euo pipefail
           sha="${HEAD_SHA:-$(git rev-parse HEAD)}"
           if [ "${VERIFY_OUTCOME}" = "success" ]; then
             conclusion=success
             title="Renovate verify passed"
-            summary="Lock regenerated (if needed) and \`${{ inputs.verify_command }}\` succeeded."
+            summary="Lock regenerated (if needed) and \`${VERIFY_COMMAND}\` succeeded."
           else
             conclusion=failure
             title="Renovate verify failed"
-            summary="Lock regenerated (if needed) but \`${{ inputs.verify_command }}\` failed."
+            summary="Lock regenerated (if needed) but \`${VERIFY_COMMAND}\` failed."
           fi
-          # Also mirror common CI job names so branch protection on those
+          # Mirror consumer required CI job names so branch protection on those
           # contexts can green without a GITHUB_TOKEN-triggered re-run.
-          for name in "$CHECK_NAME" lint test audit build map-dom-budget verify-workflows; do
+          {
+            echo "$CHECK_NAME"
+            printf '%s\n' "$STATUS_CHECK_NAMES"
+          } | awk 'NF && !seen[$0]++' | while IFS= read -r name; do
             gh api --method POST "repos/${GITHUB_REPOSITORY}/check-runs" \
               -f name="$name" \
               -f head_sha="$sha" \
