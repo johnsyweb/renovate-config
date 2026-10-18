@@ -27,7 +27,7 @@ Save as `.github/renovate.json`, then finish the [Use in a repo](#use-in-a-repo)
 
 ## Development status
 
-Maintained. Active preset for ambassy, progression, agent-skills, tampermonkey-parkrun, and further fleet migrations.
+Maintained. Active preset for ambassy, progression, agent-skills, tampermonkey-parkrun, eventuate, parkrun-by-lga, and further fleet migrations.
 
 ## Local development
 
@@ -99,8 +99,10 @@ Local within-range bumps in consumers: `aube outdated` then `aube update`, or `m
 | 2 | [progression](https://github.com/johnsyweb/progression) | Phase 2 hybrid → aube + Renovate (pnpm retired) |
 | 3 | [agent-skills](https://github.com/johnsyweb/agent-skills) | aube-native; Renovate replaces Dependabot + Monday `aube-update` |
 | 4 | [tampermonkey-parkrun](https://github.com/johnsyweb/tampermonkey-parkrun) | Phase 2 hybrid → native aube-lock + Renovate (pnpm retired) |
-| 5 | Highest-touch aube-native next (e.g. eventuate, foretoken, parkrun-by-lga) | Stamp the ambassy pattern |
-| 6 | Remaining aube-native | Including lower-traffic clones under `~/src` |
+| 5 | [eventuate](https://github.com/johnsyweb/eventuate) | aube-native; cutover PR open |
+| 6 | [parkrun-by-lga](https://github.com/johnsyweb/parkrun-by-lga) | aube-native; cutover PR open |
+| 7 | [foretoken](https://github.com/johnsyweb/foretoken) | aube-native but needs workspace, merge-gate scripts, Playwright postinstall policy |
+| 8 | Remaining aube-native | Including lower-traffic clones under `~/src` |
 
 **Pilot exit criteria:** Renovate opens PRs → aube-lock regenerates `aube-lock.yaml` → verify Check Runs green → automerge lands at least one non-major; `mise run update-deps` run once locally.
 
