@@ -42,6 +42,7 @@ Preset highlights (extends [jdx/renovate-config](https://github.com/jdx/renovate
 | Dependency dashboard | enabled |
 | Commit messages | Conventional Commits `chore(deps): …` |
 | Majors | automerged when CI is green |
+| Closed PRs | `recreateWhen: always` (not ignored on close) |
 
 Cooling (`minimumReleaseAge: 7 days`) and ecosystem grouping come from jdx’s preset.
 
