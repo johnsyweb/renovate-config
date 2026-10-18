@@ -43,6 +43,7 @@ Preset highlights (extends [jdx/renovate-config](https://github.com/jdx/renovate
 | Commit messages | Conventional Commits `chore(deps): …` |
 | Majors | automerged when CI is green |
 | Closed PRs | `recreateWhen: always` (not ignored on close) |
+| Automerge | Renovate merges itself after **all** checks are green (`platformAutomerge: false` — GitHub native auto-merge ignores optional failures) |
 
 Cooling (`minimumReleaseAge: 7 days`) and ecosystem grouping come from jdx’s preset.
 

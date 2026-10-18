@@ -18,7 +18,7 @@
       "automerge": true
     }
   ],
-  "platformAutomerge": true,
+  "platformAutomerge": false,
   "automergeType": "pr",
   "automergeStrategy": "merge-commit",
   "recreateWhen": "always"
