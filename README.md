@@ -101,7 +101,7 @@ Local within-range bumps in consumers: `aube outdated` then `aube update`, or `m
 | 4 | [tampermonkey-parkrun](https://github.com/johnsyweb/tampermonkey-parkrun) | Phase 2 hybrid → native aube-lock + Renovate (pnpm retired) |
 | 5 | [eventuate](https://github.com/johnsyweb/eventuate) | aube-native; cutover PR open |
 | 6 | [parkrun-by-lga](https://github.com/johnsyweb/parkrun-by-lga) | aube-native; cutover PR open |
-| 7 | [foretoken](https://github.com/johnsyweb/foretoken) | aube-native but needs workspace, merge-gate scripts, Playwright postinstall policy |
+| 7 | [foretoken](https://github.com/johnsyweb/foretoken) | aube-native; cutover PR open |
 | 8 | Remaining aube-native | Including lower-traffic clones under `~/src` |
 
 **Pilot exit criteria:** Renovate opens PRs → aube-lock regenerates `aube-lock.yaml` → verify Check Runs green → automerge lands at least one non-major; `mise run update-deps` run once locally.
