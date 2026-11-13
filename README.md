@@ -27,7 +27,7 @@ Save as `.github/renovate.json`, then finish the [Use in a repo](#use-in-a-repo)
 
 ## Development status
 
-Maintained. Active preset for ambassy, progression, agent-skills, tampermonkey-parkrun, eventuate, parkrun-by-lga, and further fleet migrations.
+Maintained. Active preset for ambassy, progression, agent-skills, tampermonkey-parkrun, eventuate, parkrun-by-lga, foretoken, and further fleet migrations.
 
 ## Local development
 
